@@ -1,0 +1,39 @@
+// src/controllers/customerCareController.ts
+import { sendMail } from "../utils/zeptomail.js";
+import { customerCareTemplate } from "../templates/customerCare.js";
+import { verifyToken } from "../utils/jwt.js";
+import { getSession } from "../utils/redis.js";
+
+/**
+ * Customer Care-only response sender.
+ * @param token - JWT token string (must include role claim).
+ * @param to - Recipient email address.
+ * @param customerName - Customer's name.
+ * @param issueSummary - Summary of the issue.
+ * @param agentName - Name of the customer care agent.
+ */
+export async function sendCustomerCareResponse(
+  token: string,
+  to: string,
+  customerName: string,
+  issueSummary: string,
+  agentName: string
+) {
+  // Verify JWT
+  const payload = verifyToken<{ userId: string; role: string }>(token);
+
+  // Check session in Redis
+  const session = await getSession(payload.userId);
+  if (!session) {
+    throw new Error("Session expired or invalid");
+  }
+
+  // Enforce role
+  if (payload.role !== "customer-care") {
+    throw new Error("Forbidden: Customer Care only");
+  }
+
+  // Build and send email
+  const html = customerCareTemplate(customerName, issueSummary, agentName);
+  return sendMail(to, "Customer Care Response", html, "customer-care@housika.co.ke");
+}
