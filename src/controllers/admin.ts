@@ -1,5 +1,6 @@
 // src/controllers/admin.ts
 import { sendMail } from "../utils/zeptomail.js";
+import { logEmailAudit } from "../utils/bunnydb.js";
 import { adminTemplate } from "../templates/admin.js";
 import { verifyToken } from "../utils/jwt.js";
 import { getSession } from "../utils/redis.js";
@@ -33,5 +34,16 @@ export async function sendAdminNotification(
 
   // Build and send email
   const html = adminTemplate(taskDetails, recipientName);
-  return sendMail(to, "Admin Notification", html, "admin@housika.co.ke");
+  const result = await sendMail(to, "Admin Notification", html, "admin@housika.co.ke");
+
+  // Audit log (non-blocking for main flow)
+  logEmailAudit({
+    senderRole: "admin",
+    senderEmail: "admin@housika.co.ke",
+    recipientEmail: to,
+    subject: "Admin Notification",
+    body: html,
+  }).catch((err) => console.error("Failed to write email audit log:", err));
+
+  return result;
 }

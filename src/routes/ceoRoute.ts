@@ -1,5 +1,6 @@
 // src/routes/ceoRoute.ts
 import { Hono } from "hono";
+import { extractTokenFromRequest } from "../utils/auth.js";
 import { sendCeoMessage } from "../controllers/ceo.js";
 
 const ceoRoute = new Hono();
@@ -8,12 +9,10 @@ ceoRoute.post("/", async (c) => {
   try {
     const { to, recipientName, message } = await c.req.json();
 
-    // Extract token from Authorization header
-    const authHeader = c.req.header("authorization");
-    if (!authHeader) {
-      return c.json({ error: "Authorization header missing" }, 401);
+    const token = extractTokenFromRequest(c);
+    if (!token) {
+      return c.json({ error: "Authorization token missing" }, 401);
     }
-    const token = authHeader.replace("Bearer ", "");
 
     await sendCeoMessage(token, to, recipientName, message);
     return c.json({ success: true });

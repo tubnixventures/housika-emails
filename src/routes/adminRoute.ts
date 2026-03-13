@@ -1,5 +1,6 @@
 // src/routes/adminRoute.ts
 import { Hono } from "hono";
+import { extractTokenFromRequest } from "../utils/auth.js";
 import { sendAdminNotification } from "../controllers/admin.js";
 
 const adminRoute = new Hono();
@@ -8,12 +9,10 @@ adminRoute.post("/", async (c) => {
   try {
     const { to, recipientName, taskDetails } = await c.req.json();
 
-    // Extract token from Authorization header
-    const authHeader = c.req.header("authorization");
-    if (!authHeader) {
-      return c.json({ error: "Authorization header missing" }, 401);
+    const token = extractTokenFromRequest(c);
+    if (!token) {
+      return c.json({ error: "Authorization token missing" }, 401);
     }
-    const token = authHeader.replace("Bearer ", "");
 
     await sendAdminNotification(token, to, recipientName, taskDetails);
     return c.json({ success: true });

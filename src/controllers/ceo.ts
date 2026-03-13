@@ -1,5 +1,6 @@
 // src/controllers/ceoController.ts
 import { sendMail } from "../utils/zeptomail.js";
+import { logEmailAudit } from "../utils/bunnydb.js";
 import { ceoTemplate } from "../templates/ceo.js";
 import { verifyToken } from "../utils/jwt.js";
 import { getSession } from "../utils/redis.js";
@@ -33,5 +34,16 @@ export async function sendCeoMessage(
 
   // Build and send email
   const html = ceoTemplate(message, recipientName);
-  return sendMail(to, "Message from the CEO", html, "ceo@housika.co.ke");
+  const result = await sendMail(to, "Message from the CEO", html, "ceo@housika.co.ke");
+
+  // Audit log (non-blocking for main flow)
+  logEmailAudit({
+    senderRole: "ceo",
+    senderEmail: "ceo@housika.co.ke",
+    recipientEmail: to,
+    subject: "Message from the CEO",
+    body: html,
+  }).catch((err) => console.error("Failed to write email audit log:", err));
+
+  return result;
 }

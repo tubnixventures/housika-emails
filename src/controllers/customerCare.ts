@@ -1,5 +1,6 @@
 // src/controllers/customerCareController.ts
 import { sendMail } from "../utils/zeptomail.js";
+import { logEmailAudit } from "../utils/bunnydb.js";
 import { customerCareTemplate } from "../templates/customerCare.js";
 import { verifyToken } from "../utils/jwt.js";
 import { getSession } from "../utils/redis.js";
@@ -35,5 +36,16 @@ export async function sendCustomerCareResponse(
 
   // Build and send email
   const html = customerCareTemplate(customerName, issueSummary, agentName);
-  return sendMail(to, "Customer Care Response", html, "customer-care@housika.co.ke");
+  const result = await sendMail(to, "Customer Care Response", html, "customer-care@housika.co.ke");
+
+  // Audit log (non-blocking for main flow)
+  logEmailAudit({
+    senderRole: "customer-care",
+    senderEmail: "customer-care@housika.co.ke",
+    recipientEmail: to,
+    subject: "Customer Care Response",
+    body: html,
+  }).catch((err) => console.error("Failed to write email audit log:", err));
+
+  return result;
 }
