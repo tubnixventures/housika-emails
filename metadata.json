@@ -1,0 +1,6 @@
+{
+  "name": "Housika Emailing Backend",
+  "description": "Scalable enterprise emailing backend powered by Hono, Cloudflare Emails, R2, and Azure Cosmos DB with multi-domain support, hierarchy-based RBAC, and single-partition query optimization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
